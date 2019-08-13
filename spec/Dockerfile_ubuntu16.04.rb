@@ -7,11 +7,18 @@ Docker.validate_version!
 
 describe "Dockerfile" do
   before(:all) do
+    docker_username = ENV['DOCKER_USERNAME']
+    package_name    = ENV['PACKAGE_NAME']
+    package_version = ENV['PACKAGE_VERSION']
+    image_name      = ENV['IMAGE_NAME']
+
+    # check for package version major usage
+    if package_version.match(/(\d+).x/)
+        package_version = package_version.match(/(\d+).x/)[1]
+    end
+
     image = Docker::Image.get(
-      ENV['DOCKER_USERNAME'] + "/" + \
-      ENV['PACKAGE_NAME'] + ":" + \
-      ENV['PACKAGE_VERSION'] + "-" + \
-      ENV['IMAGE_NAME']
+      "#{docker_username}/#{package_name}:#{package_version}-#{image_name}"
     )
 
     # https://github.com/mizzy/specinfra
@@ -24,7 +31,7 @@ describe "Dockerfile" do
   end
 
   def os_version
-    command("cat /etc/os-release").stdout
+    command("cat /etc/*-release").stdout
   end
 
   def sys_user
@@ -33,7 +40,7 @@ describe "Dockerfile" do
 
 
 
-  it "installs the right version of Centos" do
+  it "runs the right version of Ubuntu" do
     expect(os_version).to include("Ubuntu")
     expect(os_version).to include("16.04")
   end

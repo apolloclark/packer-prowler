@@ -7,24 +7,31 @@ Docker.validate_version!
 
 describe "Dockerfile" do
   before(:all) do
+    docker_username = ENV['DOCKER_USERNAME']
+    package_name    = ENV['PACKAGE_NAME']
+    package_version = ENV['PACKAGE_VERSION']
+    image_name      = ENV['IMAGE_NAME']
+
+    # check for package version major usage
+    if package_version.match(/(\d+).x/)
+        package_version = package_version.match(/(\d+).x/)[1]
+    end
+
     image = Docker::Image.get(
-      ENV['DOCKER_USERNAME'] + "/" + \
-      ENV['PACKAGE_NAME'] + ":" + \
-      ENV['PACKAGE_VERSION'] + "-" + \
-      ENV['IMAGE_NAME']
+      "#{docker_username}/#{package_name}:#{package_version}-#{image_name}"
     )
 
     # https://github.com/mizzy/specinfra
     # https://docs.docker.com/engine/api/v1.24/#31-containers
     # https://github.com/swipely/docker-api
     # https://serverspec.org/resource_types.html
-    set :os, family: :redhat
+    set :os, family: :debian
     set :backend, :docker
     set :docker_image, image.id
   end
 
   def os_version
-    command("cat /etc/system-release").stdout
+    command("cat /etc/*-release").stdout
   end
 
   def sys_user
@@ -33,9 +40,9 @@ describe "Dockerfile" do
 
 
 
-  it "installs the right version of Centos" do
-    expect(os_version).to include("Red Hat")
-    expect(os_version).to include("8.0")
+  it "runs the right version of Debian" do
+    expect(os_version).to include("Debian")
+    expect(os_version).to include("GNU/Linux 9")
   end
 
   it "runs as root user" do
@@ -45,6 +52,10 @@ describe "Dockerfile" do
 
 
   describe command("python --version") do
+    its(:exit_status) { should eq 0 }
+  end
+
+  describe command("pip --version") do
     its(:exit_status) { should eq 0 }
   end
 
